@@ -16,8 +16,6 @@ def generate_palette(video_path, x=0, y=0):
 
         # Convert frames from BGR to RGB
         frames_rgb = cv2.cvtColor(frames, cv2.COLOR_BGR2RGB)
-
         colors.append(frames_rgb[y, x])
-        print(colors[-1])
-        print(i)
+        
     cap.release()
