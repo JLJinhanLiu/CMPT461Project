@@ -14,6 +14,7 @@ import pathlib
 from multiprocessing import Pool, cpu_count
 import concurrent.futures
 import subprocess
+import io
 
 from gen_colour_palette import *
 from helper import *
@@ -138,7 +139,6 @@ class file_selection_window(QDialog):
         new_dir.mkdir(parents=True, exist_ok=True)
 
         for i in range(0, len(self.file_list)):
-            # continue
             raw = rawpy.imread(os.path.join(directory, self.file_list[i]))
             wb_values.append(raw.camera_whitebalance)
 
@@ -150,8 +150,9 @@ class file_selection_window(QDialog):
                 print(f"Input file {os.path.join(directory, self.file_list[i])} not found. Skipping.")
                 continue
                         
-            rgb = raw.postprocess()
-            image = Image.fromarray(rgb)
+            raw = raw.extract_thumb()
+            # rgb = raw.postprocess()
+            image = Image.open(io.BytesIO(raw.data))
 
             # Calculate new dimensions while preserving aspect ratio
             width, height = image.size
@@ -180,7 +181,7 @@ class file_selection_window(QDialog):
         ffmpeg_command = [
             "ffmpeg",   
             "-framerate", "30",
-            "-y", "-i", f"{os.path.join(directory, 'proxy', '%d.jpg')}",
+            "-n", "-i", f"{os.path.join(directory, 'proxy', '%d.jpg')}",
             f"{os.path.join(directory, 'proxy', 'proxy.mp4')}"
         ]
         subprocess.run(ffmpeg_command)
@@ -206,7 +207,6 @@ class main_window(QWidget):
         self.original_media.play()
         self.edited_media.play()
         self.playButton.setEnabled(True)
-        # generate_palette(filename)
 
     def create_player(self):
 
@@ -289,6 +289,7 @@ class main_window(QWidget):
 
     def duration_changed(self, duration):
         self.slider.setRange(0, duration)
+        self.seek_slider.setRange(0, duration)
 
     def set_position(self, position):
         self.original_media.setPosition(position)
@@ -303,14 +304,25 @@ class main_window(QWidget):
         # Plot the data
         self.ax.plot(wb_values, '-', color='white')  
         self.seekline = self.ax.axvline(0, color='red')  
-        self.canvas.draw()
+        self.canvas.draw_idle()
 
     def update_seek_bar(self, position = 0):
-        self.seekline.remove()
-        self.seekline = self.ax.axvline(int(position / self.slider.maximum() * len(wb_values)), color='red')  
-        self.canvas.draw()
+        self.seekline.set_xdata(int(position / self.seek_slider.maximum() * len(wb_values)))
+        self.canvas.draw_idle()
 
 
+# Writing a list to a file
+def write_list_to_file(file_path, my_list):
+    with open(file_path, 'w') as file:
+        for item in my_list:
+            file.write(str(item) + '\n')
+
+# Reading a list from a file
+def read_list_from_file(file_path):
+    with open(file_path, 'r') as file:
+        my_list = file.readlines()
+        my_list = [item.strip() for item in my_list]
+    return my_list
 
 app = QApplication(sys.argv)
 
@@ -318,10 +330,9 @@ app = QApplication(sys.argv)
 file_selection_window = file_selection_window()
 if file_selection_window.exec() == QDialog.Accepted:
 
-    # TODO: Step2: Pre-process files
-
-
-    # Step 3: Main interface
+    # write_list_to_file(os.path.join(directory, "proxy", "wb.txt"), wb_values)
+    # wb_values = read_list_from_file(os.path.join(directory, "proxy", "wb.txt"))
+    # Step 2: Main interface
     main_window = main_window()
     main_window.show()
     sys.exit(app.exec())
