@@ -143,7 +143,7 @@ class file_selection_window(QDialog):
             wb_values.append(raw.camera_whitebalance)
 
             if os.path.exists(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}"):
-                print(f"Skipping {os.path.join(directory, 'proxy', f"{i}.jpg")}. File already exists.")
+                print(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 continue
             
             if not os.path.exists(os.path.join(directory, self.file_list[i])):
@@ -169,7 +169,7 @@ class file_selection_window(QDialog):
                 height = new_height
                 width = new_width
 
-            image.save(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}', quality=70)
+            image.save(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}", quality=70)
 
             print(f"Image {self.file_list[i]} saved as JPEG.")
 
@@ -179,8 +179,8 @@ class file_selection_window(QDialog):
         ffmpeg_command = [
             "ffmpeg",   
             "-framerate", "30",
-            "-y", "-i", f"{os.path.join(directory, "proxy", "%d.jpg")}", 
-            f"{os.path.join(directory, "proxy", "proxy.mp4")}"
+            "-y", "-i", f"{os.path.join(directory, 'proxy', '%d.jpg')}",
+            f"{os.path.join(directory, 'proxy', 'proxy.mp4')}"
         ]
         subprocess.run(ffmpeg_command)
 
