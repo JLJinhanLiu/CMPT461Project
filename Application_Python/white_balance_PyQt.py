@@ -16,9 +16,7 @@ import concurrent.futures
 import subprocess
 
 from gen_colour_palette import *
-from gen_white_balance_data import *
 from helper import *
-# from preprocessing import *
 
 directory = ""
 wb_values = []
@@ -132,14 +130,16 @@ class file_selection_window(QDialog):
         # aka start < end
 
         global wb_values
+        new_dir = pathlib.Path(os.path.join(directory, 'proxy'))
+        new_dir.mkdir(parents=True, exist_ok=True)
 
         for i in range(0, len(self.file_list)):
             # continue
             raw = rawpy.imread(os.path.join(directory, self.file_list[i]))
             wb_values.append(raw.camera_whitebalance)
 
-            if os.path.exists(f'{os.path.join(directory, "proxy", f"{i}.jpg")}'):
-                print(f"Skipping {os.path.join(directory, "proxy", f"{i}.jpg")}. File already exists.")
+            if os.path.exists(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}'):
+                print(f"Skipping {os.path.join(directory, 'proxy', f"{i}.jpg")}. File already exists.")
                 continue
             
             if not os.path.exists(os.path.join(directory, self.file_list[i])):
@@ -148,7 +148,7 @@ class file_selection_window(QDialog):
                         
             rgb = raw.postprocess()
             image = Image.fromarray(rgb)
-            image.save(f'{os.path.join(directory, "proxy", f"{i}.jpg")}', quality=70)
+            image.save(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}', quality=70)
 
             print(f"Image {self.file_list[i]} saved as JPEG.")
 
