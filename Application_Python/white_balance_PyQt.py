@@ -139,19 +139,19 @@ class file_selection_window(QDialog):
         new_dir.mkdir(parents=True, exist_ok=True)
 
         for i in range(0, len(self.file_list)):
+
+            if not os.path.exists(os.path.join(directory, self.file_list[i])):
+                print(f"Input file {os.path.join(directory, self.file_list[i])} not found. Skipping.")
+                continue
+            
             raw = rawpy.imread(os.path.join(directory, self.file_list[i]))
             wb_values.append(raw.camera_whitebalance)
 
             if os.path.exists(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}"):
                 print(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 continue
-            
-            if not os.path.exists(os.path.join(directory, self.file_list[i])):
-                print(f"Input file {os.path.join(directory, self.file_list[i])} not found. Skipping.")
-                continue
                         
             raw = raw.extract_thumb()
-            # rgb = raw.postprocess()
             image = Image.open(io.BytesIO(raw.data))
 
             # Calculate new dimensions while preserving aspect ratio
