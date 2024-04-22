@@ -219,15 +219,15 @@ class main_window(QWidget):
         original_video = QVideoWidget()
         edited_video = QVideoWidget()
 
+        self.original_media.setVideoOutput(original_video)
+        self.edited_media.setVideoOutput(edited_video)
+
         original_label = QLabel("Original")
         original_label.setAlignment(Qt.AlignCenter)
         original_label.setMaximumHeight(30)
         edited_label = QLabel("Edited")
         edited_label.setAlignment(Qt.AlignCenter)
         edited_label.setMaximumHeight(30)
-
-        # self.openButton = QPushButton("Open File...")
-        # self.openButton.clicked.connect(self.open_file)
 
         self.add_keyframe_button = QPushButton("Add Keyframe")
         self.remove_keyframe_button = QPushButton("Remove Keyframe")
@@ -241,7 +241,6 @@ class main_window(QWidget):
         self.playButton.clicked.connect(self.play_video)
 
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(0,0)
         self.slider.sliderMoved.connect(self.set_position)
 
         # Create the Matplotlib widget
@@ -272,9 +271,6 @@ class main_window(QWidget):
         vbox.addLayout(controls_hbox)
         vbox.addWidget(self.canvas)
 
-        self.original_media.setVideoOutput(original_video)
-        self.edited_media.setVideoOutput(edited_video)
-
         self.setLayout(vbox)
 
     def play_video(self):
@@ -289,6 +285,7 @@ class main_window(QWidget):
 
     def position_changed(self, position):
         self.slider.setValue(position)
+        self.update_seek_bar(position)
 
     def duration_changed(self, duration):
         self.slider.setRange(0, duration)
@@ -296,19 +293,21 @@ class main_window(QWidget):
     def set_position(self, position):
         self.original_media.setPosition(position)
         self.edited_media.setPosition(position)
+        self.update_seek_bar(position)
 
     def plot_line_graph(self):
-        # Sample data
-        x = [1, 2, 3, 4, 5]
-        y = [2, 3, 5, 7, 6]
-
-        ax = self.canvas.figure.add_subplot(111)
-        ax.set_facecolor('black')
+        self.ax = self.canvas.figure.add_subplot(111)
+        self.ax.set_facecolor('black')
         self.canvas.figure.set_facecolor('black')
 
         # Plot the data
-        ax.plot(wb_values, '-o', color='white')  
+        self.ax.plot(wb_values, '-', color='white')  
+        self.seekline = self.ax.axvline(0, color='red')  
+        self.canvas.draw()
 
+    def update_seek_bar(self, position = 0):
+        self.seekline.remove()
+        self.seekline = self.ax.axvline(int(position / self.slider.maximum() * len(wb_values)), color='red')  
         self.canvas.draw()
 
 
