@@ -16,7 +16,7 @@ catwb4 = np.array([1732, 1744, 1744, 1744, 1744, 1744, 1744, 1744, 1744, 1744, 1
 flat = np.array([1944]*2100)
 
 # Pick an array
-catwb = catwb1
+catwb = catwb4
 sz = len(catwb)
 data = [np.arange(0, sz), catwb]
 dtest = {(np.arange(0, sz))[i]: catwb[i] for i in np.arange(0, sz)}
@@ -66,7 +66,7 @@ print("Sigmoid parameters:\n\t{}".format(popt))
 
 # Use derivative of sigmoid to estimate control point placement
 handlex = 0
-slopefactor = 30
+slopefactor = 13
 threshold = popt[0]*popt[3]/(4*slopefactor)
 while 1 < threshold/(popt[0]*popt[3]*(np.e**(popt[0]*(handlex-popt[1])))/(np.e**(popt[0]*(handlex-popt[1]))+1)**2):
     handlex += 1
