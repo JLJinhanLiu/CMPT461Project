@@ -25,4 +25,6 @@ def find_numbered_files(directory):
         print("No numbered files found in the directory.")
         return None, None, None
     
-    return min_number, max_number, sorted(file_list)
+    filtered_filenames = [filename for filename in file_list if filename.endswith(".ARW")]
+    
+    return min_number, max_number, sorted(filtered_filenames)
