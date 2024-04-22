@@ -129,6 +129,10 @@ class file_selection_window(QDialog):
         # TODO: Check if file sequence follows logical order
         # aka start < end
 
+        # Define the maximum dimensions for resizing
+        max_width = 1200
+        max_height = 800
+
         global wb_values
         new_dir = pathlib.Path(os.path.join(directory, 'proxy'))
         new_dir.mkdir(parents=True, exist_ok=True)
@@ -138,7 +142,7 @@ class file_selection_window(QDialog):
             raw = rawpy.imread(os.path.join(directory, self.file_list[i]))
             wb_values.append(raw.camera_whitebalance)
 
-            if os.path.exists(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}'):
+            if os.path.exists(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}"):
                 print(f"Skipping {os.path.join(directory, 'proxy', f"{i}.jpg")}. File already exists.")
                 continue
             
@@ -148,6 +152,23 @@ class file_selection_window(QDialog):
                         
             rgb = raw.postprocess()
             image = Image.fromarray(rgb)
+
+            # Calculate new dimensions while preserving aspect ratio
+            width, height = image.size
+
+            if width > max_width:
+                new_width = max_width
+                new_height = int(height * (max_width / width))
+                new_height -= new_height % 2
+                height = new_height 
+                width = new_width
+            if height > max_height:
+                new_height = max_height
+                new_width = int(width * (max_height / height))
+                new_width -= new_width % 2
+                height = new_height
+                width = new_width
+
             image.save(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}', quality=70)
 
             print(f"Image {self.file_list[i]} saved as JPEG.")
