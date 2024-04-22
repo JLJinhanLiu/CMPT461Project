@@ -109,12 +109,10 @@ class file_selection_window(QDialog):
         # TODO: Add progress indicator
         global directory
         print(directory + '/' + text)
-        with rawpy.imread(directory + '/' + text) as raw:
-            rgb = raw.postprocess()
-            h, w, ch = rgb.shape
-            bytesPerLine = ch * w
-            buf = bytes(rgb.data)
-            image = QImage(buf, w, h, bytesPerLine, QImage.Format_RGB888)
+        with rawpy.imread(os.path.join(directory, text)) as raw:
+            raw = raw.extract_thumb()
+            image = Image.open(io.BytesIO(raw.data))
+            image = QImage(image.tobytes(), image.width, image.height, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
         
         pixmap = pixmap.scaled(300, 200, Qt.KeepAspectRatio)
