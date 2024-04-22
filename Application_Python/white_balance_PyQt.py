@@ -173,16 +173,16 @@ class file_selection_window(QDialog):
 
             print(f"Image {self.file_list[i]} saved as JPEG.")
 
-        # print("Starting ffmpeg...")
+        print("Starting ffmpeg...")
 
         # ffmpeg command
-        # ffmpeg_command = [
-        #     "ffmpeg",   
-        #     "-framerate", "30",
-        #     "-y", "-i", f"{os.path.join(directory, "proxy", "%d.jpg")}", 
-        #     f"{os.path.join(directory, "proxy", "proxy.mp4")}"
-        # ]
-        # subprocess.run(ffmpeg_command)
+        ffmpeg_command = [
+            "ffmpeg",   
+            "-framerate", "30",
+            "-y", "-i", f"{os.path.join(directory, "proxy", "%d.jpg")}", 
+            f"{os.path.join(directory, "proxy", "proxy.mp4")}"
+        ]
+        subprocess.run(ffmpeg_command)
 
         self.accept() 
 
