@@ -229,10 +229,9 @@ class main_window(QWidget):
         edited_label.setAlignment(Qt.AlignCenter)
         edited_label.setMaximumHeight(30)
 
-        self.add_keyframe_button = QPushButton("Add Keyframe")
-        self.remove_keyframe_button = QPushButton("Remove Keyframe")
-        self.prev_keyframe_button = QPushButton("Previous Keyframe")
-        self.next_keyframe_button = QPushButton("Next Keyframe")
+        self.left_keyframe_button = QPushButton("Set Left Keyframe")
+        self.right_keyframe_button = QPushButton("Set Right Keyframe")
+        self.export_button = QPushButton("Export")
         # TODO: link buttons 
 
         self.playButton = QPushButton()
@@ -240,8 +239,14 @@ class main_window(QWidget):
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
         self.playButton.clicked.connect(self.play_video)
 
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.sliderMoved.connect(self.set_position)
+        self.seek_slider = QSlider(Qt.Horizontal)
+        self.seek_slider.sliderMoved.connect(self.set_position)
+
+        self.left_keyframe_slider = QSlider(Qt.Vertical)
+        self.right_keyframe_slider = QSlider(Qt.Vertical)
+        self.left_keyframe_slider.setMaximumHeight(120)
+        self.right_keyframe_slider.setMaximumHeight(120)
+
 
         # Create the Matplotlib widget
         self.canvas = FigureCanvas(Figure(figsize=(5, 3)))
@@ -250,27 +255,28 @@ class main_window(QWidget):
         labels_hbox = QHBoxLayout()
         medias_hbox = QHBoxLayout()
         keyframes_hbox = QHBoxLayout()
+        graph_hbox = QHBoxLayout()
         controls_hbox = QHBoxLayout()
 
         labels_hbox.addWidget(original_label)
         labels_hbox.addWidget(edited_label)
         medias_hbox.addWidget(original_video)
         medias_hbox.addWidget(edited_video)
-        keyframes_hbox.addWidget(self.add_keyframe_button)
-        keyframes_hbox.addWidget(self.remove_keyframe_button)
-        keyframes_hbox.addWidget(self.prev_keyframe_button)
-        keyframes_hbox.addWidget(self.next_keyframe_button)
-        # controls_hbox.addWidget(self.openButton)
+        keyframes_hbox.addWidget(self.left_keyframe_button)
+        keyframes_hbox.addWidget(self.right_keyframe_button)
+        graph_hbox.addWidget(self.left_keyframe_slider)
+        graph_hbox.addWidget(self.right_keyframe_slider)
+        graph_hbox.addWidget(self.canvas)
         controls_hbox.addWidget(self.playButton)
-        controls_hbox.addWidget(self.slider)
+        controls_hbox.addWidget(self.seek_slider)
 
         vbox = QVBoxLayout()
         vbox.addLayout(labels_hbox)
         vbox.addLayout(medias_hbox)
         vbox.addLayout(keyframes_hbox)
         vbox.addLayout(controls_hbox)
-        vbox.addWidget(self.canvas)
-
+        vbox.addLayout(graph_hbox)
+        vbox.addWidget(self.export_button)
         self.setLayout(vbox)
 
     def play_video(self):
@@ -284,11 +290,10 @@ class main_window(QWidget):
             self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
 
     def position_changed(self, position):
-        self.slider.setValue(position)
+        self.seek_slider.setValue(position)
         self.update_seek_bar(position)
 
     def duration_changed(self, duration):
-        self.slider.setRange(0, duration)
         self.seek_slider.setRange(0, duration)
 
     def set_position(self, position):
