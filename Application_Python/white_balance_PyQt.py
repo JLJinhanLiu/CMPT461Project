@@ -170,7 +170,7 @@ class file_selection_window(QDialog):
                 width = new_width
 
             image = image.resize((new_width, new_height))
-            image.save(f'{os.path.join(directory, 'proxy', f"{i}.jpg")}', quality=70)
+            image.save(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}", quality=70)
 
             print(f"Image {self.file_list[i]} saved as JPEG.")
 
