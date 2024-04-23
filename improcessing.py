@@ -1,14 +1,14 @@
+# import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
-# import matplotlib.pyplot as plt
 
 # For function improcess(input):
 #   Input: Array of 4D values e.g. np.shape(input) = (2100, 4)
 #   Output: Array of 4D values in the same size, Bézier control points in format [x0,x1,x2,x3]
 
 
-# This function is used by improcess() to perform per-channel denoising, Bézier fitting and quantization
+# Used by improcess() to perform per-channel denoising, Bézier fitting and quantization
 def processchannel(inputchannel):
     sz = len(inputchannel)
     datadict = {(np.arange(0, sz))[i]: inputchannel[i] for i in np.arange(0, sz)}
@@ -29,7 +29,7 @@ def processchannel(inputchannel):
     # plt.plot(range(len(absjump)), absjump, '.', label='absjump')
 
     # Only try to remove noise if there's a big jump
-    if max(absjump) > 15:
+    if max(absjump) > 15: # min 5
         # In the first half
         if absjump.index(max(absjump)) <= sz/2:
             snipindex = absjump.index(max(absjump)) + windowsize
@@ -111,7 +111,7 @@ def improcess(inputbyimages):
     # Find red and blue channels, take avg x position of BCPs
     for i in range(4):
         returnbcpx[i] = (bcps[bcpptps.index(sorted(bcpptps)[2])][i*2] + bcps[bcpptps.index(sorted(bcpptps)[3])][i*2]) / 2
-        # print("returnbcp[{}] = avg of {} and {}".format(i, bcps[bcpptps.index(sorted(bcpptps)[2])][i], bcps[bcpptps.index(sorted(bcpptps)[3])][i]))
+        # print("returnbcp[{}] = avg of {} and {}".format(i, bcps[bcpptps.index(sorted(bcpptps)[2])][i*2], bcps[bcpptps.index(sorted(bcpptps)[3])][i*2]))
 
     print("Smoothed output curves:\n\tCh0: {}\n\tCh1: {}\n\tCh2: {}\n\tCh3: {}\nPer-channel peak-to-peaks: {}\nReturned Bézier control point x coordinates:\n\t{}".format(*smoothchannels, bcpptps, returnbcpx))
     return smoothchannels, returnbcpx
