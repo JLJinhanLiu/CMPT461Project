@@ -2,7 +2,10 @@ import os
 import re
 
 def find_numbered_files(directory):
-    files = os.listdir(directory)
+    try:
+        files = os.listdir(directory)
+    except FileNotFoundError:
+        return None, None, None
     
     min_number = float('inf')
     max_number = float('-inf')
