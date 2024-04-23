@@ -34,7 +34,7 @@ class file_selection_window(QDialog):
         p.setColor(QPalette.Window, Qt.black)
         self.setPalette(p)
 
-        file_hint_label = QLabel("Select the directory with your timelapse files:")
+        file_hint_label = QLabel("Select the directory with your timelapse files (Currently only .ARW files are supported):")
         self.file_label = QLabel("")
         start_label = QLabel("Starting frame:")
         end_label = QLabel("Ending frame:")
@@ -86,19 +86,21 @@ class file_selection_window(QDialog):
         self.setLayout(vbox)
 
     def open_folder(self):
+        self.start_combobox.clear()
+        self.end_combobox.clear()
+
         global directory, file_list
         directory = QFileDialog.getExistingDirectory(self, "Select Directory", "")
         self.file_label.setText(directory)
         
         # validate folder
         min_number, max_number, file_list = find_numbered_files(directory)
-        if min_number is None or max_number is None:
+        if min_number is None or max_number is None or len(file_list) == 0:
+            self.file_label.setText("Directory does not contain a series of .ARW files. Please pick another one.")
             return False
 
         # populate comboboxes
-        self.start_combobox.clear()
         self.start_combobox.addItems(file_list)
-        self.end_combobox.clear()
         self.end_combobox.addItems(file_list)
         self.end_combobox.setCurrentIndex(self.end_combobox.count() - 1)
 
@@ -144,8 +146,7 @@ class file_selection_window(QDialog):
     def on_process_finished(self):
         self.process_thread.quit()
         self.loading_window.close()
-        # Feed wb data to be filtered and smoothed
-        # ``
+
         self.accept() 
 
 class ProcessWorker(QObject):
