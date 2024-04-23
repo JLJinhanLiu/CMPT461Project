@@ -314,19 +314,6 @@ class main_window(QWidget):
         self.canvas.draw_idle()
 
 
-# Writing a list to a file
-def write_list_to_file(file_path, my_list):
-    with open(file_path, 'w') as file:
-        for item in my_list:
-            file.write(str(item) + '\n')
-
-# Reading a list from a file
-def read_list_from_file(file_path):
-    with open(file_path, 'r') as file:
-        my_list = file.readlines()
-        my_list = [item.strip() for item in my_list]
-    return my_list
-
 app = QApplication(sys.argv)
 
 # Step 1: Directory dialog
