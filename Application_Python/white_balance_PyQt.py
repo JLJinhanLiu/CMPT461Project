@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout,\
-      QStyle, QSlider, QFileDialog, QLabel, QDialog, QComboBox, QSizePolicy
+      QStyle, QSlider, QFileDialog, QLabel, QDialog, QComboBox, QTextEdit
 from PyQt5.QtGui import QPalette, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtCore import Qt, QUrl, QThread, QObject, pyqtSignal
 from functools import partial
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -20,6 +20,7 @@ from gen_colour_palette import *
 from helper import *
 
 directory = ""
+file_list = []
 wb_values = []
 
 class file_selection_window(QDialog):
@@ -85,25 +86,25 @@ class file_selection_window(QDialog):
         self.setLayout(vbox)
 
     def open_folder(self):
-        global directory 
+        global directory, file_list
         directory = QFileDialog.getExistingDirectory(self, "Select Directory", "")
         self.file_label.setText(directory)
         
         # validate folder
-        min_number, max_number, self.file_list = find_numbered_files(directory)
+        min_number, max_number, file_list = find_numbered_files(directory)
         if min_number is None or max_number is None:
             return False
 
         # populate comboboxes
         self.start_combobox.clear()
-        self.start_combobox.addItems(self.file_list)
+        self.start_combobox.addItems(file_list)
         self.end_combobox.clear()
-        self.end_combobox.addItems(self.file_list)
+        self.end_combobox.addItems(file_list)
         self.end_combobox.setCurrentIndex(self.end_combobox.count() - 1)
 
         # set up images
-        self.update_images(0, self.file_list[0])
-        self.update_images(1, self.file_list[-1])
+        self.update_images(0, file_list[0])
+        self.update_images(1, file_list[-1])
 
     def update_images(self, index, text):
         # TODO: Add progress indicator
@@ -128,6 +129,30 @@ class file_selection_window(QDialog):
         # TODO: Check if file sequence follows logical order
         # aka start < end
 
+        self.loading_window = LoadingWindow(self)
+        self.loading_window.show()
+
+       # Start the process in a separate thread
+        self.process_thread = QThread()
+        self.process_worker = ProcessWorker()
+        self.process_worker.moveToThread(self.process_thread)
+        self.process_thread.started.connect(self.process_worker.execute_code)
+        self.process_worker.output_ready.connect(self.loading_window.set_output)
+        self.process_worker.finished.connect(self.on_process_finished)
+        self.process_thread.start()
+
+    def on_process_finished(self):
+        self.process_thread.quit()
+        self.loading_window.close()
+        # Feed wb data to be filtered and smoothed
+        # ``
+        self.accept() 
+
+class ProcessWorker(QObject):
+    output_ready = pyqtSignal(str)
+    finished = pyqtSignal()
+
+    def execute_code(self):
         # Define the maximum dimensions for resizing
         max_width = 1200
         max_height = 800
@@ -136,16 +161,18 @@ class file_selection_window(QDialog):
         new_dir = pathlib.Path(os.path.join(directory, 'proxy'))
         new_dir.mkdir(parents=True, exist_ok=True)
 
-        for i in range(0, len(self.file_list)):
+        for i in range(0, len(file_list)):
 
-            if not os.path.exists(os.path.join(directory, self.file_list[i])):
-                print(f"Input file {os.path.join(directory, self.file_list[i])} not found. Skipping.")
+            if not os.path.exists(os.path.join(directory, file_list[i])):
+                self.output_ready.emit(f"Input file {os.path.join(directory, file_list[i])} not found. Skipping.")
+                print(f"Input file {os.path.join(directory, file_list[i])} not found. Skipping.")
                 continue
             
-            raw = rawpy.imread(os.path.join(directory, self.file_list[i]))
+            raw = rawpy.imread(os.path.join(directory, file_list[i]))
             wb_values.append(raw.camera_whitebalance)
 
             if os.path.exists(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}"):
+                self.output_ready.emit(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 print(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 continue
                         
@@ -171,8 +198,10 @@ class file_selection_window(QDialog):
             image = image.resize((new_width, new_height))
             image.save(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}", quality=70)
 
-            print(f"Image {self.file_list[i]} saved as JPEG.")
-
+            self.output_ready.emit(f"Image {file_list[i]} saved as JPEG.")
+            print(f"Image {file_list[i]} saved as JPEG.")
+            
+        self.output_ready.emit("Starting ffmpeg...")
         print("Starting ffmpeg...")
 
         # ffmpeg command
@@ -183,9 +212,9 @@ class file_selection_window(QDialog):
             f"{os.path.join(directory, 'proxy', 'proxy.mp4')}"
         ]
         subprocess.run(ffmpeg_command)
-
-        self.accept() 
-
+        
+        # Emit signal to indicate that the process is finished
+        self.finished.emit()
 
 class main_window(QWidget):
     def __init__(self):
@@ -207,6 +236,9 @@ class main_window(QWidget):
         self.playButton.setEnabled(True)
 
     def create_player(self):
+
+        self.left_keyframe = 0
+        self.right_keyframe = len(wb_values) - 1
 
         self.original_media = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.original_media.positionChanged.connect(self.position_changed)
@@ -232,6 +264,8 @@ class main_window(QWidget):
         self.export_button = QPushButton("Export")
         # TODO: link buttons 
 
+        self.export_button.clicked.connect(self.save_video)
+
         self.playButton = QPushButton()
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
@@ -244,7 +278,6 @@ class main_window(QWidget):
         self.right_keyframe_slider = QSlider(Qt.Vertical)
         self.left_keyframe_slider.setMaximumHeight(120)
         self.right_keyframe_slider.setMaximumHeight(120)
-
 
         # Create the Matplotlib widget
         self.canvas = FigureCanvas(Figure(figsize=(5, 3)))
@@ -314,14 +347,103 @@ class main_window(QWidget):
         self.canvas.draw_idle()
 
 
+    def save_video(self):
+        self.loading_window = LoadingWindow(self)
+        self.loading_window.show()
+
+       # Start the process in a separate thread
+        self.process_thread = QThread()
+        self.process_worker = ProcessWorker2()
+        self.process_worker.moveToThread(self.process_thread)
+        self.process_thread.started.connect(self.process_worker.execute_code)
+        self.process_worker.output_ready.connect(self.loading_window.set_output)
+        self.process_worker.finished.connect(self.on_process_finished)
+        self.process_thread.start()
+
+    def on_process_finished(self):
+        self.process_thread.quit()
+        self.loading_window.close()
+        self.accept() 
+
+class LoadingWindow(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Loading")
+        self.setGeometry(100, 100, 400, 300)
+        
+        layout = QVBoxLayout()
+
+        # Loading label
+        self.loading_label = QLabel("Generating Proxy Media...", self)
+        self.loading_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.loading_label)
+
+        # Text box to display output
+        self.output_textbox = QTextEdit(self)
+        self.output_textbox.setReadOnly(True)
+        layout.addWidget(self.output_textbox)
+
+        self.setLayout(layout)
+        p = self.palette()
+        p.setColor(QPalette.Window, Qt.black)
+        self.setPalette(p)
+
+    def set_output(self, output):
+        self.output_textbox.append(output)
+
+    def closeEvent(self, event):
+        self.hide()
+
+class ProcessWorker2(QObject):
+    output_ready = pyqtSignal(str)
+    finished = pyqtSignal()
+
+    def execute_code(self):
+
+        counter = 0
+        for file in file_list:
+            raw = rawpy.imread(os.path.join(directory, file))
+
+            rgb = raw.postprocess(
+                user_wb = wb_values[counter],  # Use the camera's white balance settings
+                output_color=rawpy.ColorSpace.sRGB,  # Output in sRGB color space
+                gamma=(1, 1),  # No gamma correction
+                no_auto_bright=False,  # Don't automatically adjust brightness
+                output_bps=8,  # Output 8 bits per channel (standard for JPEG)
+                demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR,  # Simple demosaicing
+                user_flip=0  # No flipping
+            )
+
+            # Save the processed image as JPEG
+            pil_image = Image.fromarray(rgb)
+            pil_image.save(os.path.join(directory, "proxy", f"{counter}-final.jpg"))
+            self.output_ready.emit(f"Image {file_list[counter]} saved as JPEG.")
+            print(f"Image {file_list[counter]} saved as JPEG.")
+
+            counter += 1
+        
+        self.output_ready.emit("Starting ffmpeg...")
+        print("Starting ffmpeg...")
+
+        # ffmpeg command
+        ffmpeg_command = [
+            "ffmpeg",   
+            "-framerate", "30",
+            "-y", "-i", f"{os.path.join(directory, 'proxy', '%d-final.jpg')}",
+            f"{os.path.join(directory, 'output.mp4')}"
+        ]
+        process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in process.stdout:
+            self.process_worker.output_ready.emit(line.strip())
+        process.wait()
+        self.finished.emit()
+
 app = QApplication(sys.argv)
 
 # Step 1: Directory dialog
 file_selection_window = file_selection_window()
 if file_selection_window.exec() == QDialog.Accepted:
 
-    # write_list_to_file(os.path.join(directory, "proxy", "wb.txt"), wb_values)
-    # wb_values = read_list_from_file(os.path.join(directory, "proxy", "wb.txt"))
     # Step 2: Main interface
     main_window = main_window()
     main_window.show()
