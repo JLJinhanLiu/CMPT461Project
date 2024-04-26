@@ -1,5 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout,\
-      QStyle, QSlider, QFileDialog, QLabel, QDialog, QComboBox, QTextEdit
+from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPalette, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
