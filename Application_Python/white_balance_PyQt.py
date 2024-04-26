@@ -344,7 +344,6 @@ class main_window(QWidget):
         self.seekline.set_xdata(int(position / self.seek_slider.maximum() * len(wb_values)))
         self.canvas.draw_idle()
 
-
     def save_video(self):
         self.loading_window = LoadingWindow(self)
         self.loading_window.show()
