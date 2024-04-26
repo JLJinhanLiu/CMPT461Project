@@ -174,7 +174,7 @@ class ProcessWorker(QObject):
                 print(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 continue
                         
-            raw = raw.extract_thumb()
+            raw = raw.extract_thumb() # Use the jpeg thumbnail within the raw file - saves processing time.
             image = Image.open(io.BytesIO(raw.data))
 
             # Calculate new dimensions while preserving aspect ratio
