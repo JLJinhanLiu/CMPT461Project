@@ -109,9 +109,7 @@ class file_selection_window(QDialog):
         self.update_images(1, file_list[-1])
 
     def update_images(self, index, text):
-        # TODO: Add progress indicator
         global directory
-        print(directory + '/' + text)
         with rawpy.imread(os.path.join(directory, text)) as raw:
             raw = raw.extract_thumb()
             image = Image.open(io.BytesIO(raw.data))
