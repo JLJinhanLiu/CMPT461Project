@@ -405,11 +405,10 @@ class ProcessWorker2(QObject):
             rgb = raw.postprocess(
                 user_wb = wb_values[counter],  # Use the camera's white balance settings
                 output_color=rawpy.ColorSpace.sRGB,  # Output in sRGB color space
-                gamma=(1, 1),  # No gamma correction
-                no_auto_bright=False,  # Don't automatically adjust brightness
-                output_bps=8,  # Output 8 bits per channel (standard for JPEG)
+                gamma=(2.222, 4.5),  # gamma correction
+                no_auto_bright=False,  # automatically adjust brightness
+                output_bps=8,  # 8 bits per channel (standard for JPEG)
                 demosaic_algorithm=rawpy.DemosaicAlgorithm.LINEAR,  # Simple demosaicing
-                user_flip=0  # No flipping
             )
 
             # Save the processed image as JPEG
