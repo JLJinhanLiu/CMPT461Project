@@ -30,32 +30,38 @@ class file_selection_window(QDialog):
         self.setWindowTitle("File Selection")
 
         p = self.palette()
-        p.setColor(QPalette.Window, Qt.black)
+        p.setColor(QPalette.Window, Qt.black) # TODO: Apparently this breaks on Windows?
         self.setPalette(p)
 
+        # Labels
         file_hint_label = QLabel("Select the directory with your timelapse files (Currently only .ARW files are supported):")
-        self.file_label = QLabel("")
-        start_label = QLabel("Starting frame:")
-        end_label = QLabel("Ending frame:")
         file_hint_label.setMaximumHeight(30)
+        self.file_label = QLabel("")
         self.file_label.setMaximumHeight(30)
-        start_label.setMaximumHeight(30)
-        end_label.setMaximumHeight(30)
+        self.start_label = QLabel("Starting frame:")
+        self.start_label.setMaximumHeight(30)
+        self.start_label.setVisible(False)
+        self.end_label = QLabel("Ending frame:")
+        self.end_label.setMaximumHeight(30)
+        self.end_label.setVisible(False)
 
+        # buttons
         directory_button = QPushButton("Open Folder...")
         directory_button.clicked.connect(self.open_folder)
+        directory_button.setMaximumWidth(150)
         next_button = QPushButton("Next")
         next_button.clicked.connect(self.check_validity)
-        directory_button.setMaximumWidth(150)
 
+        # img previews
         self.start_image = QLabel()
         self.end_image = QLabel()
 
+        # comboboxes
         self.start_combobox = QComboBox()
-        self.end_combobox = QComboBox()
-        self.start_combobox.setEnabled(False)
-        self.end_combobox.setEnabled(False)
+        self.start_combobox.setVisible(False)
         self.start_combobox.currentTextChanged.connect(partial(self.update_images, 0))
+        self.end_combobox = QComboBox()
+        self.end_combobox.setVisible(False)
         self.end_combobox.currentTextChanged.connect(partial(self.update_images, 1))
 
         hbox_file_picker = QHBoxLayout()
@@ -76,17 +82,21 @@ class file_selection_window(QDialog):
         vbox = QVBoxLayout()
         vbox.addWidget(file_hint_label)
         vbox.addLayout(hbox_file_picker)
-        vbox.addWidget(start_label)
+        vbox.addWidget(self.start_label)
         vbox.addLayout(hbox_start_row)
-        vbox.addWidget(end_label)
+        vbox.addWidget(self.end_label)
         vbox.addLayout(hbox_end_row)
         vbox.addWidget(next_button)
 
         self.setLayout(vbox)
 
     def open_folder(self):
-        self.start_combobox.clear()
-        self.end_combobox.clear()
+        self.start_combobox.setVisible(False)
+        self.end_combobox.setVisible(False)
+        self.start_label.setVisible(False)
+        self.end_label.setVisible(False)
+        self.start_image.clear()
+        self.end_image.clear()
 
         global directory, file_list
         directory = QFileDialog.getExistingDirectory(self, "Select Directory", "")
@@ -119,10 +129,12 @@ class file_selection_window(QDialog):
 
         if index == 0:
             self.start_image.setPixmap(pixmap)
-            self.start_combobox.setEnabled(True)
+            self.start_combobox.setVisible(True)
+            self.start_label.setVisible(True)
         else:
             self.end_image.setPixmap(pixmap)
-            self.end_combobox.setEnabled(True)
+            self.end_combobox.setVisible(True)
+            self.end_label.setVisible(True)
 
     def check_validity(self):
         # TODO: Check if file sequence follows logical order
