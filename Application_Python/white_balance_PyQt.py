@@ -271,58 +271,46 @@ class main_window(QWidget):
         self.original_media.setVideoOutput(original_video)
         self.edited_media.setVideoOutput(edited_video)
 
+        # top labels over the previews
         original_label = QLabel("Original")
         original_label.setAlignment(Qt.AlignCenter)
         original_label.setMaximumHeight(30)
-        # TODO: Make working
         edited_label = QLabel("Edited (not working)")
         edited_label.setAlignment(Qt.AlignCenter)
         edited_label.setMaximumHeight(30)
 
-        self.export_button = QPushButton("Export")
-        self.export_button.clicked.connect(self.save_video)
-
+        # playback control row
         self.playButton = QPushButton()
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
         self.playButton.clicked.connect(self.play_video)
-
         self.seek_slider = QSlider(Qt.Horizontal)
         self.seek_slider.sliderMoved.connect(self.set_position)
 
-        self.left_keyframe_slider = QSlider(Qt.Vertical)
-        self.right_keyframe_slider = QSlider(Qt.Vertical)
-        self.left_keyframe_slider.setMaximumHeight(120)
-        self.right_keyframe_slider.setMaximumHeight(120)
-
-        # Create the Matplotlib widget
+        # Matplotlib widget
         self.canvas = FigureCanvas(Figure(figsize=(5, 3)))
         self.plot_line_graph()
 
+        # Save button
+        self.export_button = QPushButton("Export")
+        self.export_button.clicked.connect(self.save_video)
+
         labels_hbox = QHBoxLayout()
         medias_hbox = QHBoxLayout()
-        keyframes_hbox = QHBoxLayout()
-        graph_hbox = QHBoxLayout()
         controls_hbox = QHBoxLayout()
 
         labels_hbox.addWidget(original_label)
         labels_hbox.addWidget(edited_label)
         medias_hbox.addWidget(original_video)
         medias_hbox.addWidget(edited_video)
-        keyframes_hbox.addWidget(self.left_keyframe_button)
-        keyframes_hbox.addWidget(self.right_keyframe_button)
-        graph_hbox.addWidget(self.left_keyframe_slider)
-        graph_hbox.addWidget(self.right_keyframe_slider)
-        graph_hbox.addWidget(self.canvas)
         controls_hbox.addWidget(self.playButton)
         controls_hbox.addWidget(self.seek_slider)
 
         vbox = QVBoxLayout()
         vbox.addLayout(labels_hbox)
         vbox.addLayout(medias_hbox)
-        vbox.addLayout(keyframes_hbox)
         vbox.addLayout(controls_hbox)
-        vbox.addLayout(graph_hbox)
+        vbox.addWidget(self.canvas)
         vbox.addWidget(self.export_button)
         self.setLayout(vbox)
 
