@@ -158,6 +158,8 @@ class file_selection_window(QDialog):
 
         self.accept() 
 
+# Handle thumbnail generation + subsequent mp4 proxy generation
+# TODO: Replace with streaming thumbnails? Need to check if performance can keep up. 
 class ProcessWorker(QObject):
     output_ready = pyqtSignal(str)
     finished = pyqtSignal()
@@ -172,26 +174,27 @@ class ProcessWorker(QObject):
         new_dir.mkdir(parents=True, exist_ok=True)
 
         for i in range(0, len(file_list)):
-
+            # Skip file if not found (if there are breaks in the filename number sequence it will skip it)
             if not os.path.exists(os.path.join(directory, file_list[i])):
                 self.output_ready.emit(f"Input file {os.path.join(directory, file_list[i])} not found. Skipping.")
                 print(f"Input file {os.path.join(directory, file_list[i])} not found. Skipping.")
                 continue
             
+            # Read RAW image - very slow! TODO: See if we can optimize it
             raw = rawpy.imread(os.path.join(directory, file_list[i]))
-            wb_values.append(raw.camera_whitebalance)
+            wb_values.append(raw.camera_whitebalance) # get as shot whitebalance multipliers
 
+            # If output file already exists, just skip it
             if os.path.exists(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}"):
                 self.output_ready.emit(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 print(f"Skipping {os.path.join(directory, 'proxy', f'{i}.jpg')}. File already exists.")
                 continue
                         
-            raw = raw.extract_thumb() # Use the jpeg thumbnail within the raw file - saves processing time.
+            raw = raw.extract_thumb() # Grab the jpeg thumbnail within the raw file - saves processing time.
             image = Image.open(io.BytesIO(raw.data))
 
             # Calculate new dimensions while preserving aspect ratio
             width, height = image.size
-
             if width > max_width:
                 new_width = max_width
                 new_height = int(height * (max_width / width))
@@ -204,9 +207,9 @@ class ProcessWorker(QObject):
                 new_width -= new_width % 2
                 height = new_height
                 width = new_width
-
             image = image.resize((new_width, new_height))
-            image.save(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}", quality=70)
+
+            image.save(f"{os.path.join(directory, 'proxy', f'{i}.jpg')}", quality=70) # save the proxy jpg
 
             self.output_ready.emit(f"Image {file_list[i]} saved as JPEG.")
             print(f"Image {file_list[i]} saved as JPEG.")
@@ -214,7 +217,7 @@ class ProcessWorker(QObject):
         self.output_ready.emit("Starting ffmpeg...")
         print("Starting ffmpeg...")
 
-        # ffmpeg command
+        # ffmpeg encode series of images into video for playback
         ffmpeg_command = [
             "ffmpeg",   
             "-framerate", "30",
