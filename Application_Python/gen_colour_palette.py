@@ -19,3 +19,5 @@ def generate_palette(video_path, x=0, y=0):
         colors.append(frames_rgb[y, x])
         
     cap.release()
+
+    return colors
