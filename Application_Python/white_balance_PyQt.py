@@ -279,11 +279,7 @@ class main_window(QWidget):
         edited_label.setAlignment(Qt.AlignCenter)
         edited_label.setMaximumHeight(30)
 
-        self.left_keyframe_button = QPushButton("Set Left Keyframe")
-        self.right_keyframe_button = QPushButton("Set Right Keyframe")
         self.export_button = QPushButton("Export")
-        # TODO: link buttons 
-
         self.export_button.clicked.connect(self.save_video)
 
         self.playButton = QPushButton()
