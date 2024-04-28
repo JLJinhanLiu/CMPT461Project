@@ -16,11 +16,14 @@ import subprocess
 import io
 
 from gen_colour_palette import *
+from gen_white_balance import *
 from helper import *
+from bezier_updater import *
 
 directory = ""
 file_list = []
 wb_values = []
+control_points = []
 
 class file_selection_window(QDialog):
     def __init__(self):
@@ -169,8 +172,8 @@ class ProcessWorker(QObject):
         max_width = 1200
         max_height = 800
 
-        global wb_values
-        new_dir = pathlib.Path(os.path.join(directory, 'proxy'))
+        global wb_values, control_points
+        new_dir = pathlib.Path(os.path.join(directory, 'proxy')) # Make new folder for all temp files
         new_dir.mkdir(parents=True, exist_ok=True)
 
         for i in range(0, len(file_list)):
@@ -225,6 +228,9 @@ class ProcessWorker(QObject):
             f"{os.path.join(directory, 'proxy', 'proxy.mp4')}"
         ]
         subprocess.run(ffmpeg_command)
+
+        # Feed wb data to be filtered and smoothed
+        wb_values, control_points = improcess(wb_values)
         
         # Emit signal to indicate that the process is finished
         self.finished.emit()
@@ -268,7 +274,8 @@ class main_window(QWidget):
         original_label = QLabel("Original")
         original_label.setAlignment(Qt.AlignCenter)
         original_label.setMaximumHeight(30)
-        edited_label = QLabel("Edited")
+        # TODO: Make working
+        edited_label = QLabel("Edited (not working)")
         edited_label.setAlignment(Qt.AlignCenter)
         edited_label.setMaximumHeight(30)
 
